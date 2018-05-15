@@ -1,0 +1,54 @@
+{
+  "name": "Ubuntu Xenial",
+  "settings_file": "VirtualBox VMs\\Ubuntu Xenial\\Ubuntu Xenial.vbox",
+  "user": "wikiuser",
+  "password": "wikipass",
+  "groups": [],
+  "os_type_id": "Ubuntu_64",
+  "flags": "",
+  "cpu_count": 2,
+  "memory_mb": 8192,
+  "shared_folder": [
+    {
+	  "host_path": "../",
+	  "writable": true,
+	  "automount": true
+	}
+  ],
+  "storage_controller": [
+	{
+	  "name": "IDE",
+	  "storage_type": "piix4",
+	  "storage_bus": "ide",
+	  "medium": [
+	    {
+		  "access_mode": "read_only",
+		  "device_type": "dvd",
+		  "location": "ubuntu-16.04.4-server-amd64.iso",
+		  "server": "http://releases.ubuntu.com/16.04/",
+		  "format": "RAW"
+	    }
+	  ]
+	},
+	{
+	  "name": "SATA",
+	  "storage_type": "intel_ahci",
+	  "storage_bus": "sata",
+	  "medium": [
+	    {
+		  "access_mode": "read_write",
+		  "device_type": "hard_disk",
+		  "format": "VDI",
+		  "location": "VirtualBox VMs\\Ubuntu Xenial\\Ubuntu Xenial.vdi",
+		  "size_gb": 10
+		}
+	  ]
+	}
+  ],
+  "usb_controller": [
+    {
+	  "name": "USB 2.0",
+      "controller_type": "ehci"
+    }
+  ]
+}
