@@ -1,4 +1,4 @@
 - create real library that can be installed via pip
-- fix threading: run webserver and setup in own threads
+- auto-exit the webserver when installation is done
 - mount ansible-dir (ssh?)
 - run ansible
