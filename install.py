@@ -1,11 +1,12 @@
 import os
 import time
-import json
 import logging
 import asyncio
+import yaml
 import requests  # to download iso image
 from clint.textui import progress  # show progress bar while downloading image
-from aiohttp import web  # web-server for ks-file
+import tornado.ioloop
+import tornado.web
 import virtualbox
 
 
@@ -26,7 +27,7 @@ def by_name(name):
     return [m for m in vbox.machines if m.name == name]
 
 
-def create_medium(machine, controller_port, controller_name, 
+def create_medium(machine, controller_port, controller_name,
         location, format, access_mode, device_type, size_gb=0, **kwargs):
     '''
     create medium and attach it to the controller
@@ -44,7 +45,7 @@ def create_medium(machine, controller_port, controller_name,
     machine.attach_device(controller_name, controller_port, 0, device_type, om)
 
 
-def create_storage_controller(machine, name, storage_type, storage_bus, 
+def create_storage_controller(machine, name, storage_type, storage_bus,
         medium, **kwargs):
     '''
     create storage controller
@@ -63,7 +64,7 @@ def create_usb_controller(machine, name, controller_type):
     machine.add_usb_controller(name, controller_type)
 
 
-def create_shared_folder(machine, host_path, name=None, writable=False, 
+def create_shared_folder(machine, host_path, name=None, writable=False,
         automount=False):
     host_path = os.path.abspath(host_path)
     if not name:
@@ -71,7 +72,7 @@ def create_shared_folder(machine, host_path, name=None, writable=False,
     machine.create_shared_folder(name, host_path, writable, automount)
 
 
-def create(name, settings_file, flags, groups, os_type_id, 
+def create(name, settings_file, flags, groups, os_type_id,
         memory_mb, storage_controller, usb_controller, shared_folder,
         cpu_count, **kwargs):
     if len(by_name(name)) > 0:
@@ -80,9 +81,9 @@ def create(name, settings_file, flags, groups, os_type_id,
     print('creating {}'.format(name))
     machine = vbox.create_machine(
         settings_file=settings_file,
-        name=name, 
+        name=name,
         groups=groups,
-        flags=flags, 
+        flags=flags,
         os_type_id=os_type_id)
     for controller in storage_controller:
         create_storage_controller(machine=machine, **controller)
@@ -101,9 +102,9 @@ def create(name, settings_file, flags, groups, os_type_id,
             for m in controller['medium']:
                 if 'location' in m:
                     create_medium(
-                        machine=session.machine, 
-                        controller_port=port, 
-                        controller_name=controller['name'], 
+                        machine=session.machine,
+                        controller_port=port,
+                        controller_name=controller['name'],
                         **m)
                     port += 1
         session.machine.save_settings()
@@ -140,20 +141,20 @@ def check_iso_download(server, location):
         response = requests.get(link, stream=True)
         total_length = int(response.headers.get('content-length'))
         for chunk in progress.bar(
-            response.iter_content(chunk_size=1024), 
-            expected_size=(total_length/1024) + 1): 
+            response.iter_content(chunk_size=1024),
+            expected_size=(total_length/1024) + 1):
             if chunk:
                 f.write(chunk)
                 f.flush()
 
-    
+
 def check_iso_exists(storage_controller, **kwargs):
     for ctrl in storage_controller:
         for medium in ctrl['medium']:
             if 'server' in medium:
                 check_iso_download(medium['server'], medium['location'])
 
-                
+
 def create_folder(storage_controller, **kwargs):
     for ctrl in storage_controller:
         for medium in ctrl['medium']:
@@ -166,18 +167,18 @@ def create_folder(storage_controller, **kwargs):
             if os.path.isdir(location):
                 continue
             os.makedirs(location)
-            
+
 
 async def setup_async(loop, config):
     create(**config)
     install(**config)
 
-            
+
 def main():
     loop = asyncio.get_event_loop()
     for config_file in os.listdir('config'):
         print('use config file: {}'.format(config_file))
-        config = json.load(open(os.path.join('config', config_file)))
+        config = yaml.load(file(os.path.join('config', config_file), 'r'))
         check_iso_exists(**config)
         server, handler, app = start_webserver(loop)
         loop.run_until_complete(setup_async(loop, config))
@@ -190,7 +191,7 @@ def main():
             loop.run_until_complete(handler.shutdown(5.0))
             loop.run_until_complete(app.cleanup())
     loop.close()
-    
+
 
 if __name__ == '__main__':
     main()
